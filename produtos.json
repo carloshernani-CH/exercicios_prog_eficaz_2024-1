@@ -1,0 +1,25 @@
+[
+    {
+        "_id": {
+          "$oid": "6642694d55a57144ba8db984"
+        },
+        "nome": "Celular XPTO",
+        "descricao": "Celular de última geração com tela 8K",
+        "preco": 1200.00,
+        "estoque": 50,
+        "fornecedores": [
+          {
+            "nome": "TechGadgets Ltda",
+            "email": "contato@techgadgets.com",
+            "cnpj": "12.345.678/0001-12"
+          },
+          {
+            "nome": "SmartPhones & Co",
+            "email": "vendas@smartphonesco.com",
+            "cnpj": "98.765.432/0001-98"
+          }
+        ],
+        "url_imagem": "http://exemplo.com/imagens/celularxpto.jpg"
+      }
+      
+]
