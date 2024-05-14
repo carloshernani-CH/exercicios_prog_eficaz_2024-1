@@ -1,0 +1,363 @@
+{
+	"info": {
+		"_postman_id": "0623a787-45fc-4e0e-8e2c-9290300f5af0",
+		"name": "desafio",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "33082042"
+	},
+	"item": [
+		{
+			"name": "clientes",
+			"item": [
+				{
+					"name": "lista de todos os clientes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/clientes",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"clientes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "postar cliente",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "\r\n    {\r\n        \"cpf\": \"123.456.789-00\",\r\n        \"email\": \"john@example.com\",\r\n        \"nome\": \"John Doe\",\r\n        \"pedidos\": [\r\n            {\r\n                \"data_hora\": \"2023-05-13T14:30:00Z\",\r\n                \"itens\": [\r\n                    {\r\n                        \"produto_id\": {\r\n                            \"$oid\": \"6642680255a57144ba8db982\"\r\n                        },\r\n                        \"quantidade\": 2\r\n                    }\r\n                ],\r\n                \"pedido_id\": {\r\n                    \"$oid\": \"6642680255a57144ba8db982\"\r\n                },\r\n                \"status\": \"em andamento\",\r\n                \"valor_total\": 100\r\n            }\r\n        ],\r\n        \"senha\": \"hashed_password\"\r\n    }\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5000/clientes",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"clientes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "cliente por id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/clientes/6642b451cc243b2c987bdd1d",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"clientes",
+								"6642b451cc243b2c987bdd1d"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "atualiza cliente",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\r\n    \"cpf\": \"123.456.789-00\",\r\n    \"email\": \"john@example.com\",\r\n    \"nome\": \"John Doe\",\r\n    \"pedidos\": [\r\n        {\r\n            \"data_hora\": \"2023-05-13T14:30:00Z\",\r\n            \"itens\": [\r\n                {\r\n                    \"produto_id\": {\r\n                        \"$oid\": \"{'$oid': '6642680255a57144ba8db982'}\"\r\n                    },\r\n                    \"quantidade\": 2\r\n                }\r\n            ],\r\n            \"pedido_id\": {\r\n                \"$oid\": \"{'$oid': '6642680255a57144ba8db982'}\"\r\n            },\r\n            \"status\": \"em andamento\",\r\n            \"valor_total\": 100\r\n        }\r\n    ],\r\n    \"senha\": \"hashed_password\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5000/clientes/6642b451cc243b2c987bdd1d",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"clientes",
+								"6642b451cc243b2c987bdd1d"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deleta cliente",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/clientes/6642b451cc243b2c987bdd1d",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"clientes",
+								"6642b451cc243b2c987bdd1d"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "produtos",
+			"item": [
+				{
+					"name": "listar produtos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/produtos",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"produtos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "adicionar produto",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "    {\r\n\r\n        \"descricao\": \"Descrição do produto A\",\r\n        \"estoque\": 100,\r\n        \"fornecedores\": [\r\n            {\r\n                \"cnpj\": \"12.345.678/0001-99\",\r\n                \"email\": \"fornecedorA@example.com\",\r\n                \"nome\": \"Fornecedor A\"\r\n            }\r\n        ],\r\n        \"nome\": \"Produto A\",\r\n        \"preco\": 50,\r\n        \"url_imagem\": \"http://imagem-do-produto-a.com\"\r\n    }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5000/produtos",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"produtos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "produto por id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/produtos/6642b47fcc243b2c987bdd1e",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"produtos",
+								"6642b47fcc243b2c987bdd1e"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "atualiza produto",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"descricao\": \"Descrição do produto A\",\r\n    \"estoque\": 100,\r\n    \"fornecedores\": [\r\n        {\r\n            \"cnpj\": \"12.345.678/0001-99\",\r\n            \"email\": \"fornecedorA@example.com\",\r\n            \"nome\": \"Fornecedor A\"\r\n        }\r\n    ],\r\n    \"nome\": \"Produto A\",\r\n    \"preco\": 50,\r\n    \"url_imagem\": \"http://imagem-do-produto-a.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5000/produtos/6642b47fcc243b2c987bdd1e",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"produtos",
+								"6642b47fcc243b2c987bdd1e"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deleta produto",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/produtos/6642b47fcc243b2c987bdd1e",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"produtos",
+								"6642b47fcc243b2c987bdd1e"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "pedidos",
+			"item": [
+				{
+					"name": "lista pedidos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/pedidos",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"pedidos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "postar pedido",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "    {\r\n\r\n        \"cliente_id\": {\r\n            \"$oid\": \"6642680255a57144ba8db982\"\r\n        },\r\n        \"data_hora\": \"2023-05-13T14:30:00Z\",\r\n        \"itens\": [\r\n            {\r\n                \"produto_id\": {\r\n                    \"$oid\": \"6642680255a57144ba8db982\"\r\n                },\r\n                \"quantidade\": 2\r\n            }\r\n        ],\r\n        \"status\": \"em andamento\",\r\n        \"valor_total\": 100\r\n    }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5000/pedidos",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"pedidos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "produto por id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/pedidos/6642680255a57144ba8db982",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"pedidos",
+								"6642680255a57144ba8db982"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

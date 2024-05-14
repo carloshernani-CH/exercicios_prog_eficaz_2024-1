@@ -1,0 +1,17 @@
+[
+    {
+        "_id": {"$oid": "6642680255a57144ba8db982"},
+        "cliente_id": {"$oid": "6642680255a57144ba8db982"},
+        "data_hora": "2023-05-13T14:30:00Z",
+        "valor_total": 100.00,
+        "status": "em andamento",
+        "itens": [
+            {
+                "produto_id": {"$oid": "6642680255a57144ba8db982"},
+                "quantidade": 2
+            }
+        ]
+    }
+    
+      
+]

@@ -1,4 +1,4 @@
-import streamlit as st
+import exercicio_2.streamlit as st
 import requests
 from datetime import datetime
 

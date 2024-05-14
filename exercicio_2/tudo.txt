@@ -1,0 +1,607 @@
+Seu material parece bem preparado para a prova, cobrindo uma ampla gama de funcionalidades necessárias para construir um sistema de vendas online avançado. Vamos revisar e organizar todo o projeto para garantir que todos os requisitos sejam atendidos.
+
+### Estrutura do Projeto
+
+1. **app.py**: Arquivo principal da Flask API.
+2. **streamlit_app.py**: Arquivo principal para a interface do Streamlit.
+3. **models.py**: Definições dos modelos de dados do MongoDB.
+4. **auth.py**: Implementação da autenticação básica.
+5. **Coleção Postman (desafio.postman_collection.json)**: Para testar a API.
+6. **Documentação da API (README.md)**: Recomenda-se usar Markdown ou Swagger.
+
+### Modelagem de Dados com MongoDB
+
+Com base nos arquivos JSON fornecidos, aqui estão os modelos:
+
+1. **Clientes**:
+    ```json
+    {
+        "_id": {"$oid": "6642680255a57144ba8db982"},
+        "nome": "John Doe",
+        "email": "john@example.com",
+        "cpf": "123.456.789-00",
+        "senha": "hashed_password",
+        "pedidos": [
+            {
+                "pedido_id": {"$oid": "6642680255a57144ba8db982"},
+                "data_hora": "2023-05-13T14:30:00Z",
+                "valor_total": 100.00,
+                "status": "em andamento",
+                "itens": [
+                    {
+                        "produto_id": {"$oid": "6642680255a57144ba8db982"},
+                        "quantidade": 2
+                    }
+                ]
+            }
+        ]
+    }
+    ```
+
+2. **Produtos**:
+    ```json
+    {
+        "_id": {"$oid": "6642680255a57144ba8db982"},
+        "nome": "Produto A",
+        "descricao": "Descrição do produto A",
+        "preco": 50.00,
+        "estoque": 100,
+        "fornecedores": [
+            {
+                "nome": "Fornecedor A",
+                "email": "fornecedorA@example.com",
+                "cnpj": "12.345.678/0001-99"
+            }
+        ],
+        "url_imagem": "http://imagem-do-produto-a.com"
+    }
+    ```
+
+3. **Pedidos**:
+    ```json
+    {
+        "_id": {"$oid": "6642680255a57144ba8db982"},
+        "cliente_id": {"$oid": "6642680255a57144ba8db982"},
+        "data_hora": "2023-05-13T14:30:00Z",
+        "valor_total": 100.00,
+        "status": "em andamento",
+        "itens": [
+            {
+                "produto_id": {"$oid": "6642680255a57144ba8db982"},
+                "quantidade": 2
+            }
+        ]
+    }
+    ```
+
+### Implementação da API RESTful
+
+Aqui está um exemplo completo da API Flask (`app.py`), com autenticação básica:
+
+```python
+from flask import Flask, request, jsonify, make_response
+from flask_pymongo import PyMongo
+from bson import ObjectId
+from datetime import datetime
+import json
+from functools import wraps
+
+app = Flask(__name__)
+app.config['MONGO_URI'] = 'mongodb+srv://admin:admin@projagil.wxdih1t.mongodb.net/desafio'
+mongo = PyMongo(app)
+
+# Função de autenticação
+def check_auth(username, password):
+    return username == 'admin' and password == 'admin'
+
+def authenticate():
+    message = {'message': "Authenticate."}
+    resp = jsonify(message)
+    resp.status_code = 401
+    resp.headers['WWW-Authenticate'] = 'Basic realm="Example"'
+    return resp
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
+
+def convert_object_id(doc):
+    if isinstance(doc, dict):
+        for key, value in doc.items():
+            if isinstance(value, ObjectId):
+                doc[key] = {'$oid': str(value)}
+            elif isinstance(value, list):
+                doc[key] = [convert_object_id(item) for item in value]
+            elif isinstance(value, dict):
+                doc[key] = convert_object_id(value)
+    elif isinstance(doc, list):
+        doc = [convert_object_id(item) for item in doc]
+    return doc
+
+def convert_oid_to_objectid(doc):
+    if isinstance(doc, dict):
+        for key, value in doc.items():
+            if isinstance(value, dict) and '$oid' in value:
+                doc[key] = ObjectId(value['$oid'])
+            elif isinstance(value, list):
+                doc[key] = [convert_oid_to_objectid(item) for item in value]
+            elif isinstance(value, dict):
+                doc[key] = convert_oid_to_objectid(value)
+    elif isinstance(doc, list):
+        doc = [convert_oid_to_objectid(item) for item in doc]
+    return doc
+
+@app.route('/clientes', methods=['GET'])
+@requires_auth
+def get_all_clients():
+    filtro = {}
+    dados_clientes = mongo.db.clientes.find(filtro)
+    clientes = []
+    for cliente in dados_clientes:
+        cliente = convert_object_id(cliente)
+        clientes.append(cliente)
+    return jsonify(clientes), 200
+
+@app.route('/clientes', methods=['POST'])
+def post_client():
+    data = request.json
+    result = mongo.db.clientes.insert_one(data)
+    return {"id": {'$oid': str(result.inserted_id)}, "OK": "Cliente cadastrado com sucesso"}, 201
+
+@app.route('/clientes/<string:id_cliente>', methods=['GET'])
+@requires_auth
+def client_get_id(id_cliente):
+    filtro = {"_id": ObjectId(id_cliente)}
+    cliente = mongo.db.clientes.find_one(filtro)
+    if cliente:
+        cliente = convert_object_id(cliente)
+        return jsonify(cliente), 200
+    else:
+        return {'mensagem': 'cliente não encontrado'}, 404
+
+@app.route('/clientes/<string:id_cliente>', methods=['PUT'])
+@requires_auth
+def update_client(id_cliente):
+    data = request.json
+    filtro = {"_id": ObjectId(id_cliente)}
+    cliente = mongo.db.clientes.find_one(filtro)
+    if not cliente:
+        return {"erro": "cliente não encontrado"}, 404
+    else:
+        mongo.db.clientes.update_one(filtro, {"$set": data})
+        return {'mensagem': 'Cliente atualizado com sucesso'}, 201
+
+@app.route('/clientes/<string:id_cliente>', methods=['DELETE'])
+@requires_auth
+def delete_client(id_cliente):
+    filtro = {"_id": ObjectId(id_cliente)}
+    client = mongo.db.clientes.find_one(filtro)
+    if not client:
+        return {"erro": "cliente não encontrado"}, 404
+    else:
+        mongo.db.clientes.delete_one(filtro)
+        return {'mensagem': 'cliente deletado com sucesso'}, 200
+
+@app.route('/produtos', methods=['GET'])
+def get_all_products():
+    filtro = {}
+    dados_produtos = mongo.db.produtos.find(filtro)
+    produtos = []
+    for produto in dados_produtos:
+        produto = convert_object_id(produto)
+        produtos.append(produto)
+    return jsonify(produtos), 200
+
+@app.route('/produtos', methods=['POST'])
+@requires_auth
+def post_product():
+    data = request.json
+    result = mongo.db.produtos.insert_one(data)
+    return {"id": {'$oid': str(result.inserted_id)}, "OK": "produto cadastrado com sucesso"}, 201
+
+@app.route('/produtos/<string:id_produto>', methods=['GET'])
+def product_get_id(id_produto):
+    filtro = {"_id": ObjectId(id_produto)}
+    produto = mongo.db.produtos.find_one(filtro)
+    if produto:
+        produto = convert_object_id(produto)
+        return jsonify(produto), 200
+    else:
+        return {'mensagem': 'produto não encontrado'}, 404
+
+@app.route('/produtos/<string:id_produto>', methods=['PUT'])
+@requires_auth
+def update_product(id_produto):
+    data = request.json
+    filtro = {"_id": ObjectId(id_produto)}
+    produto = mongo.db.produtos.find_one(filtro)
+    if not produto:
+        return {"erro": "produto não encontrado"}, 404
+    else:
+        mongo.db.produtos.update_one(filtro, {"$set": data})
+        return {'mensagem': 'produto atualizado com sucesso'}, 201
+
+@app.route('/produtos/<string:id_produto>', methods=['DELETE'])
+@requires_auth
+def delete_product(id_produto):
+    filtro = {"_id": ObjectId(id_produto)}
+    product = mongo.db.produtos.find_one(filtro)
+    if not product:
+        return {"erro": "produto não encontrado"}, 404
+    else:
+        mongo.db.produtos.delete_one(filtro)
+        return {'mensagem': 'produto deletado com sucesso'}, 200
+
+@app.route('/pedidos', methods=['GET'])
+@requires_auth
+def get_all_orders():
+    filtro = {}
+    dados_pedidos = mongo.db.pedidos.find(filtro)
+    pedidos = []
+    for pedido in dados_pedidos:
+        pedido = convert_object_id(pedido)
+        pedidos.append(pedido)
+    return jsonify(pedidos), 200
+
+@app.route('/pedidos', methods=['POST'])
+def post_order():
+    data
+
+ = request.json
+    data = convert_oid_to_objectid(data)  # Convertendo $oid para ObjectId
+
+    cliente_id = data.get('cliente_id')
+    if not cliente_id:
+        return {'erro': 'cliente_id é necessário'}, 400
+    cliente = mongo.db.clientes.find_one({"_id": cliente_id})
+    if not cliente:
+        return {'erro': 'Cliente não encontrado'}, 404
+
+    data['data_hora'] = datetime.now().isoformat()
+    result = mongo.db.pedidos.insert_one(data)
+
+    pedido = {
+        'pedido_id': result.inserted_id,
+        'data_hora': data['data_hora'],
+        'valor_total': data['valor_total'],
+        'status': data['status'],
+        'itens': data['itens']
+    }
+
+    mongo.db.clientes.update_one({"_id": cliente_id}, {"$push": {"pedidos": pedido}})
+
+    return {"id": {'$oid': str(result.inserted_id)}, "OK": "pedido cadastrado com sucesso"}, 201
+
+@app.route('/pedidos/<string:id_pedido>', methods=['GET'])
+@requires_auth
+def order_get_id(id_pedido):
+    filtro = {"_id": ObjectId(id_pedido)}
+    pedido = mongo.db.pedidos.find_one(filtro)
+    if pedido:
+        pedido = convert_object_id(pedido)
+        return jsonify(pedido), 200
+    else:
+        return {'mensagem': 'pedido não encontrado'}, 404
+
+@app.route('/pedidos/<string:id_pedido>', methods=['PUT'])
+@requires_auth
+def update_order(id_pedido):
+    data = request.json
+    filtro = {"_id": ObjectId(id_pedido)}
+    pedido = mongo.db.pedidos.find_one(filtro)
+    if not pedido:
+        return {"erro": "pedido não encontrado"}, 404
+    else:
+        mongo.db.pedidos.update_one(filtro, {"$set": data})
+        return {'mensagem': 'Pedido atualizado com sucesso'}, 201
+
+@app.route('/pedidos/<string:id_pedido>', methods=['DELETE'])
+@requires_auth
+def delete_order(id_pedido):
+    filtro = {"_id": ObjectId(id_pedido)}
+    pedido = mongo.db.pedidos.find_one(filtro)
+    if not pedido:
+        return {"erro": "pedido não encontrado"}, 404
+    else:
+        mongo.db.pedidos.delete_one(filtro)
+        return {'mensagem': 'pedido deletado com sucesso'}, 200
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
+```
+
+### Interface de Usuário com Streamlit (`streamlit_app.py`)
+
+A interface do usuário em Streamlit inclui painéis distintos para usuários e administradores:
+
+```python
+import streamlit as st
+import requests
+from datetime import datetime
+
+# URL base da API
+api_url = "http://localhost:5000"
+
+# Funções auxiliares para chamadas à API com tratamento de erros
+def get_all_clients():
+    try:
+        response = requests.get(f"{api_url}/clientes", auth=('admin', 'admin'))
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        st.error(f"Erro ao obter clientes: {e}")
+        return []
+
+def get_all_products():
+    try:
+        response = requests.get(f"{api_url}/produtos")
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        st.error(f"Erro ao obter produtos: {e}")
+        return []
+
+def get_all_orders():
+    try:
+        response = requests.get(f"{api_url}/pedidos", auth=('admin', 'admin'))
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        st.error(f"Erro ao obter pedidos: {e}")
+        return []
+
+def post_client(data):
+    try:
+        response = requests.post(f"{api_url}/clientes", json=data)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        st.error(f"Erro ao adicionar cliente: {e}")
+        return {}
+
+def post_product(data):
+    try:
+        response = requests.post(f"{api_url}/produtos", json=data, auth=('admin', 'admin'))
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        st.error(f"Erro ao adicionar produto: {e}")
+        return {}
+
+def post_order(data):
+    try:
+        response = requests.post(f"{api_url}/pedidos", json=data)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        st.error(f"Erro ao fazer pedido: {e}")
+        return {}
+
+def update_client(id_cliente, data):
+    try:
+        response = requests.put(f"{api_url}/clientes/{id_cliente}", json=data, auth=('admin', 'admin'))
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        st.error(f"Erro ao atualizar cliente: {e}")
+        return {}
+
+def update_product(id_produto, data):
+    try:
+        response = requests.put(f"{api_url}/produtos/{id_produto}", json=data, auth=('admin', 'admin'))
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        st.error(f"Erro ao atualizar produto: {e}")
+        return {}
+
+def update_order(id_pedido, data):
+    try:
+        response = requests.put(f"{api_url}/pedidos/{id_pedido}", json=data, auth=('admin', 'admin'))
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        st.error(f"Erro ao atualizar pedido: {e}")
+        return {}
+
+def delete_client(id_cliente):
+    try:
+        response = requests.delete(f"{api_url}/clientes/{id_cliente}", auth=('admin', 'admin'))
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        st.error(f"Erro ao deletar cliente: {e}")
+        return {}
+
+def delete_product(id_produto):
+    try:
+        response = requests.delete(f"{api_url}/produtos/{id_produto}", auth=('admin', 'admin'))
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        st.error(f"Erro ao deletar produto: {e}")
+        return {}
+
+def delete_order(id_pedido):
+    try:
+        response = requests.delete(f"{api_url}/pedidos/{id_pedido}", auth=('admin', 'admin'))
+        response.raise_for_status()
+        if response.content:
+            return response.json()
+        else:
+            return {"mensagem": "Pedido deletado com sucesso"}
+    except requests.RequestException as e:
+        st.error(f"Erro ao deletar pedido: {e}")
+        return {}
+
+# Interface Streamlit
+st.title("Sistema de Gestão")
+
+# Seleção do Painel
+painel = st.sidebar.selectbox("Selecione o Painel", ["Usuário", "Administrativo"])
+
+if painel == "Usuário":
+    st.header("Painel do Usuário")
+
+    # Visualização de Produtos
+    st.subheader("Produtos")
+    produtos = get_all_products()
+    for produto in produtos:
+        st.write(f"Nome: {produto['nome']}, Descrição: {produto['descricao']}, Preço: {produto['preco']}")
+
+    # Fazer Pedido
+    st.subheader("Fazer Pedido")
+    cliente_id = st.text_input("ID do Cliente")
+    produto_id = st.text_input("ID do Produto")
+    quantidade = st.number_input("Quantidade", min_value=1)
+    if st.button("Fazer Pedido"):
+        pedido = {
+            "cliente_id": {"$oid": cliente_id},
+            "data_hora": datetime.now().isoformat(),
+            "itens": [{"produto_id": {"$oid": produto_id}, "quantidade": quantidade}],
+            "status": "em andamento",
+            "valor_total": 0  # Valor total precisa ser calculado
+        }
+        response = post_order(pedido)
+        st.write(response)
+
+elif painel == "Administrativo":
+    st.header("Painel Administrativo")
+
+    # Gestão de Clientes
+    st.subheader("Clientes")
+    clientes = get_all_clients()
+    for cliente in clientes:
+        st.write(f"ID: {cliente['_id']['$oid']}, Nome: {cliente['nome']}, Email: {cliente['email']}, CPF: {cliente['cpf']}")
+
+    # Adicionar Novo Cliente
+    st.subheader("Adicionar Novo Cliente")
+    nome_cliente = st.text_input("Nome do Cliente")
+    email_cliente = st.text_input("Email do Cliente")
+    cpf_cliente = st.text_input("CPF do Cliente")
+    senha_cliente = st.text_input("Senha do Cliente", type='password')
+    if st.button("Adicionar Cliente"):
+        novo_cliente = {
+            "nome": nome_cliente,
+            "email": email_cliente,
+            "cpf": cpf_cliente,
+            "senha": senha_cliente
+        }
+        response = post_client(novo_cliente)
+        st.write(response)
+
+    # Atualizar Cliente
+    st.subheader("Atualizar Cliente")
+    id_cliente = st.text_input("ID do Cliente para Atualizar")
+    nome_cliente_upd = st.text_input("Novo Nome do Cliente")
+    email_cliente_upd = st.text_input("Novo Email do Cliente")
+    cpf_cliente_upd = st.text_input("Novo CPF do Cliente")
+    senha_cliente_upd = st.text_input("Nova Senha do Cliente", type='password')
+    if st.button("Atualizar Cliente"):
+        cliente_atualizado = {
+            "nome": nome_cliente_upd,
+            "email": email_cliente_upd,
+            "cpf": cpf_cliente_upd
+
+,
+            "senha": senha_cliente_upd
+        }
+        response = update_client(id_cliente, cliente_atualizado)
+        st.write(response)
+
+    # Deletar Cliente
+    st.subheader("Deletar Cliente")
+    id_cliente_del = st.text_input("ID do Cliente para Deletar")
+    if st.button("Deletar Cliente"):
+        response = delete_client(id_cliente_del)
+        st.write(response)
+
+    # Gestão de Produtos
+    st.subheader("Produtos")
+    produtos = get_all_products()
+    for produto in produtos:
+        st.write(f"ID: {produto['_id']['$oid']}, Nome: {produto['nome']}, Descrição: {produto['descricao']}, Preço: {produto['preco']}")
+
+    # Adicionar Novo Produto
+    st.subheader("Adicionar Novo Produto")
+    nome_produto = st.text_input("Nome do Produto")
+    descricao_produto = st.text_input("Descrição do Produto")
+    preco_produto = st.number_input("Preço do Produto", min_value=0.0, format="%.2f")
+    estoque_produto = st.number_input("Estoque do Produto", min_value=0)
+    if st.button("Adicionar Produto"):
+        novo_produto = {
+            "nome": nome_produto,
+            "descricao": descricao_produto,
+            "preco": preco_produto,
+            "estoque": estoque_produto
+        }
+        response = post_product(novo_produto)
+        st.write(response)
+
+    # Atualizar Produto
+    st.subheader("Atualizar Produto")
+    id_produto = st.text_input("ID do Produto para Atualizar")
+    nome_produto_upd = st.text_input("Novo Nome do Produto")
+    descricao_produto_upd = st.text_input("Nova Descrição do Produto")
+    preco_produto_upd = st.number_input("Novo Preço do Produto", min_value=0.0, format="%.2f")
+    estoque_produto_upd = st.number_input("Novo Estoque do Produto", min_value=0)
+    if st.button("Atualizar Produto"):
+        produto_atualizado = {
+            "nome": nome_produto_upd,
+            "descricao": descricao_produto_upd,
+            "preco": preco_produto_upd,
+            "estoque": estoque_produto_upd
+        }
+        response = update_product(id_produto, produto_atualizado)
+        st.write(response)
+
+    # Deletar Produto
+    st.subheader("Deletar Produto")
+    id_produto_del = st.text_input("ID do Produto para Deletar")
+    if st.button("Deletar Produto"):
+        response = delete_product(id_produto_del)
+        st.write(response)
+
+    # Gestão de Pedidos
+    st.subheader("Pedidos")
+    pedidos = get_all_orders()
+    for pedido in pedidos:
+        st.write(f"ID do Pedido: {pedido['_id']['$oid']}, Cliente ID: {pedido['cliente_id']['$oid']}, Data: {pedido['data_hora']}, Status: {pedido['status']}, Valor Total: {pedido['valor_total']}")
+
+    # Atualizar Pedido
+    st.subheader("Atualizar Pedido")
+    id_pedido = st.text_input("ID do Pedido para Atualizar")
+    status_pedido_upd = st.text_input("Novo Status do Pedido")
+    valor_total_pedido_upd = st.number_input("Novo Valor Total do Pedido", min_value=0.0, format="%.2f")
+    if st.button("Atualizar Pedido"):
+        pedido_atualizado = {
+            "status": status_pedido_upd,
+            "valor_total": valor_total_pedido_upd
+        }
+        response = update_order(id_pedido, pedido_atualizado)
+        st.write(response)
+
+    # Deletar Pedido
+    st.subheader("Deletar Pedido")
+    id_pedido_del = st.text_input("ID do Pedido para Deletar")
+    if st.button("Deletar Pedido"):
+        response = delete_order(id_pedido_del)
+        st.write(response)
+```
+
+### Coleção Postman
+
+O arquivo `desafio.postman_collection.json` já foi carregado e contém todas as requisições necessárias para testar a API.
+
+### Documentação da API
+
+Certifique-se de que a documentação da API (`README.md`) esteja completa e clara, explicando todos os endpoints e como usá-los.
+
+### Conclusão
+
+Seu material está bem estruturado e cobre todos os aspectos importantes para a construção de um sistema de vendas online avançado. Boa sorte na sua prova! Se precisar de mais alguma coisa, sinta-se à vontade para perguntar.
